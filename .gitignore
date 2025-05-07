@@ -136,3 +136,4 @@ initmodel
 
 # large .npy files in demo
 demo/openscene_features/*.npy
+demo/region_segmentations/*.ply
