@@ -1,0 +1,41 @@
+#!/bin/bash
+
+# Usage: ./custom_setup.sh <FOLDERNAME>
+# Example: ./custom_setup.sh my_new_folder
+
+FOLDERNAME="$1"
+if [ -z "$FOLDERNAME" ]; then
+    echo "Usage: $0 <FOLDERNAME>"
+    exit 1
+fi
+
+PREPROCESSED_DIR=~/openscene/data/preprocessed/$FOLDERNAME
+CUSTOM_MULTIVIEW_DIR=~/openscene/data/custom_multiview_openseg/$FOLDERNAME
+
+cleanup_dir() {
+    local dir=$1
+    if [ -d "$dir" ]; then
+        echo "Delete files in $dir..."
+        rm -rf "$dir"/*
+    else
+        mkdir -p "$dir"
+    fi
+}
+
+cleanup_dir "$PREPROCESSED_DIR"
+cleanup_dir "$CUSTOM_MULTIVIEW_DIR"
+
+if [ ! -f "custom_2d.zip" ] || [ ! -f "custom_3d.zip" ]; then
+    echo "Error: zip files not found."
+    exit 1
+fi
+
+echo "unzip custom_2d.zip..."
+unzip -o custom_2d.zip -d ~/openscene/data/preprocessed/$FOLDERNAME
+
+echo "unzip custom_3d.zip..."
+unzip -o custom_3d.zip -d ~/openscene/data/preprocessed/
+
+echo "Extraction complete. Files are located in:"
+echo " - $PREPROCESSED_DIR"
+echo " - $CUSTOM_MULTIVIEW_DIR"

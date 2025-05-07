@@ -3,13 +3,16 @@ import torch
 import glob
 import math
 import numpy as np
-from tensorflow import io
+import imageio.v2 as imageio
+import io
+from PIL import Image
+from tensorflow import io as tfio
 import tensorflow.compat.v1 as tf
 
 def read_bytes(path):
     '''Read bytes for OpenSeg model running.'''
 
-    with io.gfile.GFile(path, 'rb') as f:
+    with tfio.gfile.GFile(path, 'rb') as f:
         file_bytes = f.read()
     return file_bytes
 
@@ -58,14 +61,72 @@ def extract_openseg_img_feature(img_dir, openseg_model, text_emb, img_size=None,
     else:
         image_embedding_feat = results['image_embedding_feat'][:, :crop_sz[0], :crop_sz[1]]
     if img_size is not None:
-        feat_2d = tf.cast(tf.image.resize_nearest_neighbor(
-            image_embedding_feat, img_size, align_corners=True)[0], dtype=tf.float16).numpy()
+        feat_2d = tf.cast(tf.image.resize_nearest_neighbor(image_embedding_feat, img_size, align_corners=True)[0], dtype=tf.float16).numpy()
     else:
         feat_2d = tf.cast(image_embedding_feat[[0]], dtype=tf.float16).numpy()
 
     feat_2d = torch.from_numpy(feat_2d).permute(2, 0, 1)
 
     return feat_2d
+
+
+def extract_openseg_img_feature_split(img_dir, openseg_model, text_emb, patch_size=(640, 640), regional_pool=True):
+    '''Extract per-pixel OpenSeg features.'''
+
+    # load RGB image
+    np_image = imageio.imread(img_dir)   # shape: (H, W, C)
+    original_height, original_width, _ = np_image.shape
+
+    patch_height, patch_width = patch_size
+    stride = patch_height
+
+    num_patches_x = original_width // patch_width
+    num_patches_y = original_height // patch_height
+
+    full_feat_2d = torch.zeros((768, original_height, original_width), device="cpu", dtype=torch.float16)
+    patchcounter = 0
+
+    for i in range(num_patches_y):  # Für jede Zeile
+        for j in range(num_patches_x):  # Für jede Spalte
+            y_start = i * stride
+            x_start = j * stride
+            y_end = y_start + patch_height
+            x_end = x_start + patch_width
+
+            #patch = np_image_string[y_start:y_end, x_start:x_end]
+            patch_array = np_image[y_start:y_end, x_start:x_end]
+
+            patch_pil = Image.fromarray(patch_array)
+            patch_io = io.BytesIO()
+            patch_pil.save(patch_io, format='JPEG')  # JPEG oder PNG
+            patch_bytes = patch_io.getvalue()
+            print(f'Calculating patch{patchcounter} with position (y: {y_start}-{y_end}, x: {x_start}-{x_end})')
+
+            # Run OpenSeg for Patch
+            results = openseg_model.signatures['serving_default'](
+                inp_image_bytes=tf.convert_to_tensor(patch_bytes),
+                inp_text_emb=text_emb
+            )
+
+            img_info = results['image_info']
+            crop_sz = [
+                int(img_info[0, 0] * img_info[2, 0]),
+                int(img_info[0, 1] * img_info[2, 1])
+            ]
+            if regional_pool:  # pixelwise vector
+                image_embedding_feat = results['ppixel_ave_feat'][:, :crop_sz[0], :crop_sz[1]]
+            else:  # one vector representing the image
+                image_embedding_feat = results['image_embedding_feat'][:, :crop_sz[0], :crop_sz[1]]
+
+            feat_2d_patch = tf.cast(image_embedding_feat[[0]], dtype=tf.float16).numpy()
+
+            patch_feat_cpu = torch.from_numpy(feat_2d_patch).permute(2, 0, 1)  # [C, H, W]
+
+            full_feat_2d[:, y_start:y_end, x_start:x_end] = patch_feat_cpu
+            patchcounter += 1
+
+    return full_feat_2d
+
 
 def save_fused_feature(feat_bank, point_ids, n_points, out_dir, scene_id, args):
     '''Save features.'''

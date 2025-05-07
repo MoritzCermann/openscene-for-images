@@ -16,7 +16,7 @@ class FusedFeatureLoader(Point3DLoader):
                  datapath_prefix,
                  datapath_prefix_feat,
                  voxel_size=0.05,
-                 split='train', aug=False, memcache_init=False,
+                 split=None, aug=False, memcache_init=False,
                  identifier=7791, loop=1, eval_all=False,
                  input_color = False,
                  ):
@@ -35,6 +35,22 @@ class FusedFeatureLoader(Point3DLoader):
         # for evaluation/test sets, all has just one
         if 'nuscenes' in self.dataset_name: # only one file for each scene
             self.list_occur = None
+        elif 'custom_3d' in self.dataset_name: # only one file for each scene
+            self.list_occur = []
+            for data_path in self.data_paths:
+                file_dirs = glob(join(self.datapath_feat, '*.pt'))
+                print(file_dirs)
+                self.list_occur.append(len(file_dirs))
+            # some scenes in matterport have no features at all
+            ind = np.where(np.array(self.list_occur) != 0)[0]
+            if np.any(np.array(self.list_occur) == 0):
+                data_paths, list_occur = [], []
+                for i in ind:
+                    data_paths.append(self.data_paths[i])
+                    list_occur.append(self.list_occur[i])
+                self.data_paths = data_paths
+                self.list_occur = list_occur
+            print(self.data_paths)
         else:
             self.list_occur = []
             for data_path in self.data_paths:

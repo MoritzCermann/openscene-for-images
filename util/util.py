@@ -218,6 +218,16 @@ def get_palette(num_cls=21, colormap='scannet'):
         for _, value in MATTERPORT_COLOR_MAP_160.items():
             scannet_palette.append(np.array(value))
         palette = np.concatenate(scannet_palette)
+    elif colormap == 'custom_160':
+        scannet_palette = []
+        for _, value in CUSTOM_COLOR_MAP_160.items():
+            scannet_palette.append(np.array(value))
+        palette = np.concatenate(scannet_palette)
+    elif colormap == 'custom_18':
+        scannet_palette = []
+        for _, value in CUSTOM_COLOR_MAP_18.items():
+            scannet_palette.append(np.array(value))
+        palette = np.concatenate(scannet_palette)
     elif colormap == 'nuscenes16':
         nuscenes16_palette = []
         for _, value in NUSCENES16_COLORMAP.items():

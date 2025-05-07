@@ -65,7 +65,7 @@ class Point3DLoader(torch.utils.data.Dataset):
     LOCFEAT_IDX = 2
 
     def __init__(self, datapath_prefix='data', voxel_size=0.05,
-                 split='train', aug=False, memcache_init=False, identifier=1233, loop=1,
+                 split=None, aug=False, memcache_init=False, identifier=1233, loop=1,
                  data_aug_color_trans_ratio=0.1,
                  data_aug_color_jitter_std=0.05,
                  data_aug_hue_max=0.5,
@@ -74,10 +74,13 @@ class Point3DLoader(torch.utils.data.Dataset):
                  ):
         super().__init__()
         self.split = split
-        if split is None:
-            split = ''
         self.identifier = identifier
-        self.data_paths = sorted(glob(join(datapath_prefix, split, '*.pth')))
+        if split is None: # dont split the dataset
+            split = ''
+            self.data_paths = sorted(glob(join(datapath_prefix, '*.pth')))
+        else:
+            self.data_paths = sorted(glob(join(datapath_prefix, split, '*.pth')))
+
         if len(self.data_paths) == 0:
             raise Exception('0 file is loaded in the point loader.')
 

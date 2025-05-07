@@ -8,7 +8,7 @@ DATA:
   
 TEST:
   split:
-  labelset: matterport
+  labelset: matterport160
   prompt_eng: True
   mark_no_feature_to_unknown: True
   feature_type: 'ensemble' # 'distill' | 'fusion' | 'ensemble'

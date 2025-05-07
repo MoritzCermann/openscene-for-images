@@ -1,0 +1,29 @@
+#!/bin/bash
+
+if [ "$#" -ne 1 ]; then
+    echo "Usage: ./run_converter <name>"
+    exit 1
+fi
+
+NAME=$1
+INPUT_PATH="/home/moritz/data/${NAME}/dense/0/${NAME}.ply"
+OUTPUT_PATH="/home/moritz/openscene/demo/region_segmentations/region_${NAME}.ply"
+
+if [ ! -f "$INPUT_PATH" ]; then
+    echo "Error: Input file '$INPUT_PATH' does not exist."
+    exit 1
+fi
+
+echo "Loading PLY and removing degenerate faces"
+echo "$INPUT_PATH $OUTPUT_PATH"
+
+# ./gaps/bin/x86_64/msh2msh "$INPUT_PATH" "$OUTPUT_PATH" -clean -fill_holes -max_edge_length 1.0 -min_edge_length 0.001
+# Might also want to remove -fill_holes
+./gaps/bin/x86_64/msh2msh "$INPUT_PATH" "$OUTPUT_PATH" -clean -max_edge_length 1.0
+
+if [ $? -eq 0 ]; then
+    echo "Cleaned up the Mesh. Conversion successful! Output saved to: $OUTPUT_PATH"
+else
+    echo "Conversion failed."
+    exit 1
+fi

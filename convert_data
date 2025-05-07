@@ -1,0 +1,28 @@
+#!/bin/bash
+
+echo "This script converts data from colmap (2d&3d) into a usable format for feature fusion."
+echo "Format will be as followed:"
+echo "custom_2d"
+echo "|-scene01"
+echo "  |-color"
+echo "    |-0.jpg"
+echo "    |-..."
+echo "  |-depth"
+echo "    |-0.png"
+echo "    |-..."
+echo "  |-pose"
+echo "    |-0.txt"
+echo "    |-..."
+echo "|-intrinsics.txt"
+echo "custom_3d"
+echo "|-scene01.pth"
+echo "------------------"
+read -p "Enter name of the datafolder that should be converted: " NAME
+
+echo "Converting all data to custom_2d & custom_3d folder"
+
+BASE_PATH="/home/moritz/data/"
+python3 -c "from util.added_utils import convert_colmap_data_to_openscene; convert_colmap_data_to_openscene('${BASE_PATH}', '${NAME}')"
+
+echo "Done"
+echo "custom_2d & custom_3d can be found in ${BASE_PATH}${NAME}"
